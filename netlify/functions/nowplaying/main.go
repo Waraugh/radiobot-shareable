@@ -31,7 +31,7 @@ func readTitle() (string, string, error) {
 		return "", "", err
 	}
 	defer conn.Close()
-	_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
+	_ = conn.SetDeadline(time.Now().Add(25 * time.Second))
 
 	request := "GET /regc-radiobob2000rock2507507-mp3-192-9881528 HTTP/1.1\r\n" +
 		"Host: regiocast.streamabc.net\r\n" +
@@ -75,7 +75,7 @@ func readTitle() (string, string, error) {
 	}
 
 	audio := make([]byte, metaint)
-	for i := 0; i < 12; i++ {
+	for i := 0; i < 60; i++ {
 		if _, err := io.ReadFull(br, audio); err != nil {
 			return "", "", err
 		}
@@ -103,9 +103,16 @@ func readTitle() (string, string, error) {
 			continue
 		}
 		title := strings.TrimSpace(raw[begin : begin+finish])
-		if title != "" {
-			return title, raw, nil
+		if title == "" {
+			continue
 		}
+		// QuantumCast may initially identify the stream itself as StreamTitle.
+		// That is station branding, not now-playing metadata, so keep reading.
+		normalized := strings.ToLower(strings.TrimSpace(title))
+		if normalized == "radio bob - 2000er rock" || normalized == "radio bob! - 2000er rock" || normalized == "radio bob! 2000er rock" {
+			continue
+		}
+		return title, raw, nil
 	}
 	return "", "", fmt.Errorf("no StreamTitle received")
 }
