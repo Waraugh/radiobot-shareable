@@ -52,12 +52,9 @@ async function updateTitle(){
   if(r.ok&&d.title){
    const incoming=d.title.trim();
    if(!displayedTitle){
-    if(incoming!==pendingTitle){pendingTitle=incoming;pendingSince=Date.now();}
-    if(Date.now()-pendingSince>=TITLE_DELAY_MS){
-     displayedTitle=pendingTitle;
-     title.textContent=displayedTitle;
-     document.title=displayedTitle+' — Rican Radio';
-    }
+    displayedTitle=incoming;
+    title.textContent=displayedTitle;
+    document.title=displayedTitle+' — Rican Radio';
    }else if(incoming===displayedTitle){
     pendingTitle=''; pendingSince=0;
    }else{
