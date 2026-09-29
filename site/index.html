@@ -42,7 +42,7 @@ play.addEventListener('click',async()=>{
 audio.addEventListener('playing',()=>{playing=true;play.textContent='❚❚ Pause';status.textContent='Playing live'});
 audio.addEventListener('pause',()=>{playing=false;play.textContent='▶ Play';if(audio.currentTime)status.textContent='Paused'});
 audio.addEventListener('error',()=>status.textContent='Stream connection error — try Play again');
-const TITLE_DELAY_MS=30000;
+const TITLE_DELAY_MS=35000;
 let displayedTitle='', pendingTitle='', pendingSince=0;
 
 async function updateTitle(){
