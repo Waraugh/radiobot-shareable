@@ -1,36 +1,527 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#111111"><meta name="apple-mobile-web-app-capable" content="yes">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Rican Radio">
-<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-180.png">
 <title>Rican Radio</title>
+
 <style>
 :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#0b0b0b;color:#fff;display:grid;place-items:center;padding:24px}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#0b0b0b;color:#fff;display:grid;place-items:center;padding:24px}
 .card{width:min(520px,100%);background:#171717;border:1px solid #303030;border-radius:24px;padding:28px;box-shadow:0 18px 60px #0008}
 .eyebrow{font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;color:#aaa;font-weight:700}
-.station{font-size:2.15rem;line-height:1.05;font-weight:900;margin:8px 0 6px}.source{font-size:.9rem;color:#888;font-weight:650;margin-bottom:28px}
-.now{font-size:.75rem;text-transform:uppercase;letter-spacing:.14em;color:#888;font-weight:800}
-.track{display:flex;gap:18px;align-items:center;min-height:112px;margin:10px 0 22px}.art{width:108px;height:108px;flex:0 0 108px;border-radius:14px;object-fit:cover;box-shadow:0 8px 24px #0007;display:none}
-.tracktext{min-width:0}.song{font-size:1.4rem;line-height:1.14;font-weight:800;overflow-wrap:anywhere}.artist{font-size:1rem;line-height:1.3;color:#aaa;font-weight:650;margin-top:7px;overflow-wrap:anywhere}.loading{font-size:1.25rem;font-weight:750}
-.play{width:100%;border:0;border-radius:16px;padding:17px;font-size:1.1rem;font-weight:850;background:#fff;color:#111;cursor:pointer}.play:active{transform:scale(.99)}
-.status{margin-top:14px;color:#8e8e8e;font-size:.86rem;text-align:center}.install{margin-top:22px;border-top:1px solid #292929;padding-top:18px;color:#aaa;font-size:.88rem;line-height:1.45}.install b{color:#ddd}
-@media(max-width:390px){.card{padding:25px}.track{gap:14px}.art{width:94px;height:94px;flex-basis:94px}.song{font-size:1.25rem}}
-</style></head><body>
-<main class="card"><div class="eyebrow">Live Stream</div><div class="station">RICAN RADIO</div><div class="source">RADIO BOB! · 2000er Rock</div>
-<div class="now">Now Playing</div><div class="track"><img class="art" id="art" alt=""><div class="tracktext"><div class="loading" id="loading">Loading song information…</div><div class="song" id="song"></div><div class="artist" id="artist"></div></div></div>
-<button class="play" id="play">▶ Play</button><div class="status" id="status">Ready</div><div class="install"><b>iPhone:</b> Share → Add to Home Screen<br><b>Android:</b> Menu (⋮) → Add to Home screen<br>Install Rican Radio like an app.</div></main>
-<audio id="audio" preload="none" src="https://streams.radiobob.de/2000er/mp3-192/streams.radiobob.de/"></audio>
+.station{font-size:2.15rem;line-height:1.05;font-weight:900;margin:8px 0 6px}
+.source{font-size:.9rem;color:#888;font-weight:650;margin-bottom:14px}
+.stations{display:flex;flex-wrap:wrap;gap:7px;padding:2px 0 18px}
+.stationbtn{flex:0 0 auto;border:1px solid #353535;border-radius:999px;padding:8px 12px;background:#202020;color:#aaa;font-size:.78rem;font-weight:750;cursor:pointer;white-space:nowrap}
+.stationbtn.active{background:#fff;color:#111;border-color:#fff}
+.stationbtn:active{transform:scale(.97)}
+.label{font-size:.75rem;text-transform:uppercase;letter-spacing:.14em;color:#888;font-weight:800}
+.track{display:flex;gap:18px;align-items:center;min-height:112px;margin:10px 0 22px}
+.art{width:108px;height:108px;flex:0 0 108px;border-radius:14px;object-fit:cover;box-shadow:0 8px 24px #0007;display:none}
+.tracktext{min-width:0}
+.song{font-size:1.4rem;line-height:1.14;font-weight:800;overflow-wrap:anywhere}
+.artist{font-size:1rem;line-height:1.3;color:#aaa;font-weight:650;margin-top:7px;overflow-wrap:anywhere}
+.loading{font-size:1.25rem;font-weight:750}
+
+.upnext{display:none;border-top:1px solid #292929;padding-top:18px;margin:0 0 22px}
+.uptrack{display:flex;gap:12px;align-items:center;margin-top:10px}
+.upart{width:56px;height:56px;flex:0 0 56px;border-radius:9px;object-fit:cover;display:none}
+.upsong{font-size:1rem;font-weight:800;line-height:1.2;overflow-wrap:anywhere}
+.upartist{font-size:.88rem;color:#999;font-weight:650;margin-top:4px;overflow-wrap:anywhere}
+
+.play{width:100%;border:0;border-radius:16px;padding:17px;font-size:1.1rem;font-weight:850;background:#fff;color:#111;cursor:pointer}
+.play:active{transform:scale(.99)}
+.status{margin-top:14px;color:#8e8e8e;font-size:.86rem;text-align:center}
+.syncnote{margin-top:6px;color:#666;font-size:.76rem;text-align:center}
+.install{margin-top:22px;border-top:1px solid #292929;padding-top:18px;color:#aaa;font-size:.88rem;line-height:1.45}
+.install b{color:#ddd}
+
+@media(max-width:390px){
+.card{padding:25px}
+.track{gap:14px}
+.art{width:94px;height:94px;flex-basis:94px}
+.song{font-size:1.25rem}
+}
+</style>
+</head>
+
+<body>
+
+<main class="card">
+<div class="eyebrow">Live Stream</div>
+<div class="station">RICAN RADIO</div>
+<div class="source" id="source">2000s Rock</div>
+
+<div class="stations" id="stations">
+<button class="stationbtn" data-station="2000s">2000s</button>
+<button class="stationbtn" data-station="90s">90s</button>
+<button class="stationbtn" data-station="alternative">Alternative</button>
+<button class="stationbtn" data-station="punk">Punk</button>
+<button class="stationbtn" data-station="hardrock">Hard Rock</button>
+<button class="stationbtn" data-station="classic">Classic</button>
+<button class="stationbtn" data-station="rockparty">Rockparty</button>
+</div>
+
+<div class="label">Now Playing</div>
+
+<div class="track">
+<img class="art" id="art" alt="">
+<div class="tracktext">
+<div class="loading" id="loading">Loading song information…</div>
+<div class="song" id="song"></div>
+<div class="artist" id="artist"></div>
+</div>
+</div>
+
+<div class="upnext" id="upnext">
+<div class="label">Up Next</div>
+<div class="uptrack">
+<img class="upart" id="upart" alt="">
+<div>
+<div class="upsong" id="upsong"></div>
+<div class="upartist" id="upartist"></div>
+</div>
+</div>
+</div>
+
+<button class="play" id="play">▶ Play</button>
+<div class="status" id="status">Ready</div>
+<div class="syncnote" id="syncnote">Track info syncs after the next song change.</div>
+
+<div class="install">
+<div style="margin-bottom:4px">Install Rican Radio like an app.</div>
+<b>iPhone:</b> Share → Add to Home Screen<br>
+<b>Android:</b> Menu (⋮) → Add to Home screen
+<div style="margin-top:12px;color:#777">Powered by RADIO BOB!</div>
+</div>
+</main>
+
+<audio id="audio" preload="none"></audio>
+
 <script>
-const audio=document.getElementById('audio'),play=document.getElementById('play'),status=document.getElementById('status'),song=document.getElementById('song'),artist=document.getElementById('artist'),art=document.getElementById('art'),loading=document.getElementById('loading');
-let playing=false;play.addEventListener('click',async()=>{try{if(!playing){await audio.play();playing=true;play.textContent='❚❚ Pause';status.textContent='Playing live';}else{audio.pause();playing=false;play.textContent='▶ Play';status.textContent='Paused';}}catch(e){status.textContent='Could not start audio — tap Play again';}});
-audio.addEventListener('playing',()=>{playing=true;play.textContent='❚❚ Pause';status.textContent='Playing live'});audio.addEventListener('pause',()=>{playing=false;play.textContent='▶ Play';if(audio.currentTime)status.textContent='Paused'});audio.addEventListener('error',()=>status.textContent='Stream connection error — try Play again');
-const TITLE_DELAY_MS=35000;let displayedTitle='',pendingTitle='',pendingSince=0,artworkRequest=0;
-function splitTitle(raw){const i=raw.indexOf(' - ');if(i<1)return{artist:'',song:raw};return{artist:raw.slice(0,i).trim(),song:raw.slice(i+3).trim()};}
-async function updateArtwork(a,s){const request=++artworkRequest;art.style.display='none';art.removeAttribute('src');if(!a||!s)return;try{const r=await fetch('/api/artwork?artist='+encodeURIComponent(a)+'&track='+encodeURIComponent(s));if(!r.ok)return;const d=await r.json();if(request!==artworkRequest||!d.artwork)return;art.onload=()=>{if(request===artworkRequest)art.style.display='block'};art.onerror=()=>{art.style.display='none';art.removeAttribute('src')};art.src=d.artwork;}catch(e){}}
-function showTitle(raw){displayedTitle=raw;const p=splitTitle(raw);loading.style.display='none';song.textContent=p.song;artist.textContent=p.artist;artist.style.display=p.artist?'block':'none';document.title=(p.song||raw)+' — Rican Radio';updateArtwork(p.artist,p.song);}
-async function updateTitle(){try{const r=await fetch('/api/now-playing?t='+Date.now(),{cache:'no-store'});const d=await r.json();if(r.ok&&d.title){const incoming=d.title.trim();if(!displayedTitle){showTitle(incoming);}else if(incoming===displayedTitle){pendingTitle='';pendingSince=0;}else{if(incoming!==pendingTitle){pendingTitle=incoming;pendingSince=Date.now();}if(Date.now()-pendingSince>=TITLE_DELAY_MS){showTitle(pendingTitle);pendingTitle='';pendingSince=0;}}}}catch(e){}}
-updateTitle();setInterval(updateTitle,5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateTitle()});if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
-</script></body></html>
+const STATIONS={
+    '2000s':{
+        label:'2000s',
+        source:'2000s Rock',
+        stream:'https://streams.radiobob.de/2000er/mp3-192/streams.radiobob.de/',
+        channel:'regc_pitmutr6xn_sdfb'
+    },
+    '90s':{
+        label:'90s',
+        source:'90s Rock',
+        stream:'https://streams.radiobob.de/bob-90srock/mp3-192/streams.radiobob.de/',
+        channel:'regc_h0sny5ggxl_lvqk'
+    },
+    'alternative':{
+        label:'Alternative',
+        source:'Alternative Rock',
+        stream:'https://streams.radiobob.de/bob-alternative/mp3-192/streams.radiobob.de/',
+        channel:'regc_aas456fmir_xx9k'
+    },
+    'punk':{
+        label:'Punk',
+        source:'Punk',
+        stream:'https://streams.radiobob.de/bob-punk/mp3-192/streams.radiobob.de/',
+        channel:'regc_vsikaxn88e_enya'
+    },
+    'hardrock':{
+        label:'Hard Rock',
+        source:'Hard Rock',
+        stream:'https://streams.radiobob.de/bob-hardrock/mp3-192/streams.radiobob.de/',
+        channel:'regc_lhwi0uadx6_j9g3'
+    },
+    'classic':{
+        label:'Classic',
+        source:'Classic Rock',
+        stream:'https://streams.radiobob.de/bob-classicrock/mp3-192/streams.radiobob.de/',
+        channel:'regc_exr8sgbl5s_mbbz'
+    },
+    'rockparty':{
+        label:'Rockparty',
+        source:'Rockparty',
+        stream:'https://streams.radiobob.de/rockparty/mp3-192/streams.radiobob.de/',
+        channel:'regc_17cuav6pgh_mikd'
+    }
+};
+
+/*
+ * Measured channel-metadata lead over audible playback:
+ * approximately 35–41 seconds across observed transitions.
+ */
+const AUDIO_DELAY_MS=38000;
+
+const audio=document.getElementById('audio');
+const play=document.getElementById('play');
+const status=document.getElementById('status');
+const syncnote=document.getElementById('syncnote');
+const source=document.getElementById('source');
+const stationButtons=[...document.querySelectorAll('.stationbtn')];
+
+const song=document.getElementById('song');
+const artist=document.getElementById('artist');
+const art=document.getElementById('art');
+const loading=document.getElementById('loading');
+
+const upnext=document.getElementById('upnext');
+const upsong=document.getElementById('upsong');
+const upartist=document.getElementById('upartist');
+const upart=document.getElementById('upart');
+
+let playing=false;
+let current=null;
+let pending=null;
+let promotionTimer=null;
+let socket=null;
+let reconnectTimer=null;
+let stationGeneration=0;
+
+let stationId=localStorage.getItem('ricanRadioStation');
+if(!STATIONS[stationId])stationId='2000s';
+
+play.addEventListener('click',async()=>{
+    try{
+        if(!playing){
+            await audio.play();
+            playing=true;
+            play.textContent='❚❚ Pause';
+            status.textContent='Playing live';
+        }else{
+            audio.pause();
+            playing=false;
+            play.textContent='▶ Play';
+            status.textContent='Paused';
+        }
+    }catch(e){
+        status.textContent='Could not start audio — tap Play again';
+    }
+});
+
+audio.addEventListener('playing',()=>{
+    playing=true;
+    play.textContent='❚❚ Pause';
+    status.textContent='Playing live';
+});
+
+audio.addEventListener('pause',()=>{
+    playing=false;
+    play.textContent='▶ Play';
+    if(audio.currentTime)status.textContent='Paused';
+});
+
+audio.addEventListener('error',()=>{
+    status.textContent='Stream connection error — try Play again';
+});
+
+function artworkURL(track){
+    if(!track)return '';
+
+    if(track.images&&track.images.large&&track.images.large.url)
+        return track.images.large.url;
+
+    if(track.cover)
+        return track.cover;
+
+    return '';
+}
+
+function setImage(element,url){
+    element.style.display='none';
+    element.removeAttribute('src');
+
+    if(!url)return;
+
+    element.onload=()=>element.style.display='block';
+    element.onerror=()=>{
+        element.style.display='none';
+        element.removeAttribute('src');
+    };
+
+    element.src=url;
+}
+
+function showCurrent(track){
+    if(!track)return;
+
+    current=track;
+
+    loading.style.display='none';
+    song.textContent=track.song||'';
+    artist.textContent=track.artist||'';
+    artist.style.display=track.artist?'block':'none';
+
+    setImage(art,artworkURL(track));
+
+    document.title=(track.song||'Rican Radio')+' — Rican Radio';
+
+    if('mediaSession' in navigator){
+        try{
+            const artwork=artworkURL(track);
+
+            navigator.mediaSession.metadata=new MediaMetadata({
+                title:track.song||'Rican Radio',
+                artist:track.artist||'',
+                album:STATIONS[stationId].source,
+                artwork:artwork?[{
+                    src:artwork,
+                    sizes:'1200x1200',
+                    type:'image/jpeg'
+                }]:[]
+            });
+        }catch(e){}
+    }
+}
+
+function showPending(track){
+    pending=track;
+
+    upsong.textContent=track.song||'';
+    upartist.textContent=track.artist||'';
+    upartist.style.display=track.artist?'block':'none';
+
+    setImage(upart,artworkURL(track));
+
+    upnext.style.display='block';
+}
+
+function hidePending(){
+    upnext.style.display='none';
+    upsong.textContent='';
+    upartist.textContent='';
+    upart.style.display='none';
+    upart.removeAttribute('src');
+}
+
+function sameTrack(a,b){
+    if(!a||!b)return false;
+
+    if(a.id&&b.id)
+        return a.id===b.id;
+
+    return a.artist===b.artist&&a.song===b.song;
+}
+
+function scheduleTrack(track){
+    if(!track||track.type!=='now'||!track.song)return;
+
+    if(current&&sameTrack(track,current))
+        return;
+
+    if(pending&&sameTrack(track,pending))
+        return;
+
+    /*
+     * On initial load we need something to display immediately.
+     * Subsequent channel events are early relative to audible audio,
+     * so they become Up Next until the measured audio delay expires.
+     */
+    if(!current){
+        showCurrent(track);
+        return;
+    }
+
+    showPending(track);
+
+    if(promotionTimer)
+        clearTimeout(promotionTimer);
+
+    promotionTimer=setTimeout(()=>{
+        if(!pending)return;
+
+        const next=pending;
+        pending=null;
+
+        showCurrent(next);
+        hidePending();
+        syncnote.style.display='none';
+    },AUDIO_DELAY_MS);
+}
+
+async function loadInitialMetadata(generation=stationGeneration){
+    const station=STATIONS[stationId];
+
+    try{
+        const response=await fetch(
+            'https://api.streamabc.net/metadata/channel/'+station.channel+'.json',
+            {cache:'no-store'}
+        );
+
+        if(!response.ok||generation!==stationGeneration)
+            return;
+
+        const data=await response.json();
+
+        if(generation===stationGeneration)
+            scheduleTrack(data);
+    }catch(e){}
+}
+
+function connectMetadata(generation=stationGeneration){
+    const station=STATIONS[stationId];
+
+    if(socket&&(socket.readyState===WebSocket.OPEN||
+                socket.readyState===WebSocket.CONNECTING))
+        return;
+
+    try{
+        const ws=new WebSocket(
+            'wss://api.streamabc.net/metadata/channel/'+station.channel
+        );
+
+        socket=ws;
+
+        ws.onmessage=event=>{
+            if(generation!==stationGeneration)return;
+
+            try{
+                const data=JSON.parse(event.data);
+                scheduleTrack(data);
+            }catch(e){}
+        };
+
+        ws.onclose=()=>{
+            if(socket===ws)socket=null;
+            if(generation!==stationGeneration)return;
+
+            clearTimeout(reconnectTimer);
+            reconnectTimer=setTimeout(
+                ()=>connectMetadata(generation),
+                5000
+            );
+        };
+
+        ws.onerror=()=>{
+            try{ws.close();}catch(e){}
+        };
+    }catch(e){
+        if(generation!==stationGeneration)return;
+
+        clearTimeout(reconnectTimer);
+        reconnectTimer=setTimeout(
+            ()=>connectMetadata(generation),
+            5000
+        );
+    }
+}
+
+function resetTrackDisplay(){
+    current=null;
+    pending=null;
+
+    if(promotionTimer){
+        clearTimeout(promotionTimer);
+        promotionTimer=null;
+    }
+
+    loading.style.display='block';
+    loading.textContent='Loading song information…';
+
+    song.textContent='';
+    artist.textContent='';
+    artist.style.display='none';
+
+    art.style.display='none';
+    art.removeAttribute('src');
+
+    hidePending();
+
+    document.title='Rican Radio';
+}
+
+function updateStationButtons(){
+    stationButtons.forEach(button=>{
+        button.classList.toggle(
+            'active',
+            button.dataset.station===stationId
+        );
+    });
+}
+
+async function selectStation(id){
+    if(!STATIONS[id]||id===stationId)return;
+
+    const wasPlaying=playing;
+
+    stationGeneration++;
+    const generation=stationGeneration;
+
+    clearTimeout(reconnectTimer);
+
+    if(socket){
+        const oldSocket=socket;
+        socket=null;
+        try{oldSocket.close();}catch(e){}
+    }
+
+    audio.pause();
+
+    stationId=id;
+    localStorage.setItem('ricanRadioStation',stationId);
+
+    const station=STATIONS[stationId];
+
+    source.textContent=station.source;
+    updateStationButtons();
+    resetTrackDisplay();
+    syncnote.style.display='block';
+
+    audio.src=station.stream;
+    audio.load();
+
+    loadInitialMetadata(generation);
+    connectMetadata(generation);
+
+    if(wasPlaying){
+        status.textContent='Switching station…';
+
+        try{
+            await audio.play();
+        }catch(e){
+            playing=false;
+            play.textContent='▶ Play';
+            status.textContent='Tap Play to start '+station.label;
+        }
+    }else{
+        status.textContent='Ready';
+    }
+}
+
+stationButtons.forEach(button=>{
+    button.addEventListener('click',()=>{
+        selectStation(button.dataset.station);
+    });
+});
+
+function initializeStation(){
+    const station=STATIONS[stationId];
+
+    source.textContent=station.source;
+    audio.src=station.stream;
+
+    updateStationButtons();
+    loadInitialMetadata();
+    connectMetadata();
+}
+
+document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden){
+        loadInitialMetadata();
+        connectMetadata();
+    }
+});
+
+initializeStation();
+
+if('serviceWorker' in navigator)
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+</script>
+
+</body>
+</html>
