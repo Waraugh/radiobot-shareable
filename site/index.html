@@ -124,6 +124,37 @@ let pending=null;
 let promotionTimer=null;
 let socket=null;
 let reconnectTimer=null;
+let initialSyncDone=false;
+
+async function syncAudibleTrack(){
+    if(initialSyncDone)return;
+
+    try{
+        const response=await fetch('/api/now-playing?t='+Date.now(),{
+            cache:'no-store'
+        });
+
+        if(!response.ok)return;
+
+        const data=await response.json();
+        if(!data.title)return;
+
+        const raw=data.title.trim();
+        const separator=raw.indexOf(' - ');
+
+        const track={
+            artist:separator>0?raw.slice(0,separator).trim():'',
+            song:separator>0?raw.slice(separator+3).trim():raw
+        };
+
+        /*
+         * The ICY reader represents the audio stream itself, so use it
+         * once to establish what this listening session is hearing.
+         */
+        showCurrent(track);
+        initialSyncDone=true;
+    }catch(e){}
+}
 
 play.addEventListener('click',async()=>{
     try{
@@ -132,6 +163,8 @@ play.addEventListener('click',async()=>{
             playing=true;
             play.textContent='❚❚ Pause';
             status.textContent='Playing live';
+
+            syncAudibleTrack();
         }else{
             audio.pause();
             playing=false;
