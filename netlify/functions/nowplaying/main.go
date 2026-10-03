@@ -133,14 +133,20 @@ func handler(request events.APIGatewayProxyRequest) (*events.APIGatewayProxyResp
 		}
 	}
 	body, _ := json.Marshal(payload)
+
+	headers := map[string]string{
+		"Content-Type":                "application/json; charset=utf-8",
+		"Cache-Control":               "no-cache",
+		"Access-Control-Allow-Origin": "*",
+	}
+	if status == 200 {
+		headers["Netlify-CDN-Cache-Control"] = "public, durable, s-maxage=15, stale-while-revalidate=15"
+	}
+
 	return &events.APIGatewayProxyResponse{
 		StatusCode: status,
-		Headers: map[string]string{
-			"Content-Type":                "application/json; charset=utf-8",
-			"Cache-Control":               "no-store, max-age=0",
-			"Access-Control-Allow-Origin": "*",
-		},
-		Body: string(body),
+		Headers:    headers,
+		Body:       string(body),
 	}, nil
 }
 
