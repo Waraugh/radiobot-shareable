@@ -68,6 +68,9 @@ body{margin:0;min-height:100vh;background:#0b0b0b;color:#fff;display:grid;place-
 <button class="stationbtn" data-station="hardrock">Hard Rock</button>
 <button class="stationbtn" data-station="classic">Classic</button>
 <button class="stationbtn" data-station="rockparty">Rockparty</button>
+<button class="stationbtn" data-station="hits">Top 40</button>
+<button class="stationbtn" data-station="hiphop">Hip-Hop / R&B</button>
+<button class="stationbtn" data-station="country">Country</button>
 </div>
 
 <div class="label">Now Playing</div>
@@ -149,7 +152,10 @@ const STATIONS={
         source:'Rockparty',
         stream:'https://streams.radiobob.de/rockparty/mp3-192/streams.radiobob.de/',
         channel:'regc_17cuav6pgh_mikd'
-    }
+    },
+    'hits':{label:'Top 40',source:"Today's Hottest Hits",stream:'https://streaming.live365.com/a85985',provider:'live365'},
+    'hiphop':{label:'Hip-Hop / R&B',source:"Today's Hottest Hip Hop",stream:'https://streaming.live365.com/a99954',provider:'live365'},
+    'country':{label:'Country',source:"Today's Hottest Country",stream:'https://streaming.live365.com/a13336',provider:'live365'}
 };
 
 /*
@@ -181,6 +187,7 @@ let pending=null;
 let promotionTimer=null;
 let socket=null;
 let reconnectTimer=null;
+let live365Timer=null;
 let stationGeneration=0;
 
 let stationId=localStorage.getItem('ricanRadioStation');
@@ -346,6 +353,7 @@ function scheduleTrack(track){
 
 async function loadInitialMetadata(generation=stationGeneration){
     const station=STATIONS[stationId];
+    if(station.provider==='live365')return;
 
     try{
         const response=await fetch(
@@ -365,6 +373,7 @@ async function loadInitialMetadata(generation=stationGeneration){
 
 function connectMetadata(generation=stationGeneration){
     const station=STATIONS[stationId];
+    if(station.provider==='live365')return;
 
     if(socket&&(socket.readyState===WebSocket.OPEN||
                 socket.readyState===WebSocket.CONNECTING))
@@ -411,6 +420,116 @@ function connectMetadata(generation=stationGeneration){
     }
 }
 
+// Live365 reports the track currently on air; it does not provide Up Next.
+const live365ArtworkCache=new Map();
+
+function normalizedMusicText(value){
+    return (value||'').toLowerCase().normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g,'')
+        .replace(/\b(feat(?:uring)?|ft)\.?\b.*$/i,'')
+        .replace(/\([^)]*\b(remix|edit|version|radio|clean|explicit|remaster)\b[^)]*\)/gi,'')
+        .replace(/[^a-z0-9]+/g,' ').trim();
+}
+
+function musicTitleMatches(wanted,candidate){
+    const a=normalizedMusicText(wanted),b=normalizedMusicText(candidate);
+    if(!a||!b)return false;
+    if(a===b)return true;
+    // Allow a version suffix, but not a different song with a shared prefix.
+    return (b.startsWith(a+' ')&&/^(live|remaster|radio edit|single version|album version|clean|explicit)\b/.test(b.slice(a.length+1)))||
+           (a.startsWith(b+' ')&&/^(live|remaster|radio edit|single version|album version|clean|explicit)\b/.test(a.slice(b.length+1)));
+}
+
+function musicArtistMatches(wanted,candidate){
+    const a=normalizedMusicText(wanted),b=normalizedMusicText(candidate);
+    if(!a||!b)return false;
+    if(a===b)return true;
+    const parts=value=>value.split(/\s*(?:,|&|\+|\/|\bx\b|\band\b|\bwith\b)\s*/i)
+        .map(normalizedMusicText).filter(Boolean);
+    const artists=parts(wanted),catalog=parts(candidate);
+    if(artists.some(name=>catalog.includes(name)))return true;
+    // A station may credit collaborators while the catalog lists only the lead.
+    // Require a full artist-name boundary; never match substrings (e.g. "Karol" in "Karoline").
+    return artists.some(name=>b===name||b.startsWith(name+' '))||
+           catalog.some(name=>a===name||a.startsWith(name+' '));
+}
+
+async function lookupLive365Artwork(track,generation){
+    if(!track.needsArtwork||!track.artist||!track.song)return;
+    const key=normalizedMusicText(track.artist)+'|'+normalizedMusicText(track.song);
+    const applyCover=cover=>{
+        if(cover&&generation===stationGeneration&&current&&sameTrack(current,track))
+            showCurrent({...current,cover});
+    };
+    if(live365ArtworkCache.has(key)){
+        applyCover(live365ArtworkCache.get(key));
+        return;
+    }
+    const findMatch=results=>(results||[]).find(item=>
+        item.kind==='song'&&item.artworkUrl100&&
+        musicTitleMatches(track.song,item.trackName)&&
+        musicArtistMatches(track.artist,item.artistName)
+    );
+    try{
+        const search=async term=>{
+            const params=new URLSearchParams({
+                term,media:'music',entity:'song',country:'US',limit:'35'
+            });
+            const response=await fetch('https://itunes.apple.com/search?'+params);
+            if(!response.ok)throw new Error('Artwork search failed');
+            return (await response.json()).results||[];
+        };
+        // Full credits first. If the catalog indexes the song under one artist,
+        // search by title and validate both title and artist before accepting.
+        let match=findMatch(await search(track.artist+' '+track.song));
+        if(!match)match=findMatch(await search(track.song));
+        const cover=match&&match.artworkUrl100?
+            match.artworkUrl100.replace(/100x100(?:bb|-[0-9]+)?/, '600x600bb'):'';
+        live365ArtworkCache.set(key,cover);
+        if(live365ArtworkCache.size>300)
+            live365ArtworkCache.delete(live365ArtworkCache.keys().next().value);
+        applyCover(cover);
+    }catch(e){}
+}
+
+function live365Track(data){
+    const t=data['current-track'];
+    const fallback=data['station-logo']||data.logo||'';
+    if(!t||!t.title)return {song:data.name||STATIONS[stationId].source,artist:'',cover:fallback};
+    const title=t.title.replace(/\s*#\d+\s*-?\s*$/,'').trim();
+    const realArt=t.art&&!/blankart\.jpg|station_profile_default|default.*art|placeholder/i.test(t.art);
+    return {id:[t.start,t.artist,t.title].join('|'),song:title||t.title,
+        artist:t.artist||'',cover:realArt?t.art:fallback,needsArtwork:!realArt};
+}
+
+async function refreshLive365(generation=stationGeneration){
+    const station=STATIONS[stationId];
+    if(station.provider!=='live365')return;
+    try{
+        const response=await fetch('https://api.live365.com/v1/station/'+station.stream.split('/').pop(),{cache:'no-store'});
+        if(!response.ok||generation!==stationGeneration)return;
+        const data=await response.json();
+        if(generation!==stationGeneration)return;
+        const track=live365Track(data);
+        if(!current||!sameTrack(current,track)){
+            showCurrent(track);
+            lookupLive365Artwork(track,generation);
+        }
+        hidePending();
+    }catch(e){
+        if(generation===stationGeneration&&!current)
+            showCurrent({song:station.source,artist:''});
+    }
+}
+
+function startLive365(generation=stationGeneration){
+    clearInterval(live365Timer);
+    live365Timer=null;
+    if(STATIONS[stationId].provider!=='live365')return;
+    refreshLive365(generation);
+    live365Timer=setInterval(()=>refreshLive365(generation),15000);
+}
+
 function resetTrackDisplay(){
     current=null;
     pending=null;
@@ -453,6 +572,8 @@ async function selectStation(id){
     const generation=stationGeneration;
 
     clearTimeout(reconnectTimer);
+    clearInterval(live365Timer);
+    live365Timer=null;
 
     if(socket){
         const oldSocket=socket;
@@ -470,13 +591,15 @@ async function selectStation(id){
     source.textContent=station.source;
     updateStationButtons();
     resetTrackDisplay();
-    syncnote.style.display='block';
+    syncnote.style.display=station.provider==='live365'?'none':'block';
+    if(station.provider==='live365')showCurrent({song:station.source,artist:''});
 
     audio.src=station.stream;
     audio.load();
 
     loadInitialMetadata(generation);
     connectMetadata(generation);
+    startLive365(generation);
 
     if(wasPlaying){
         status.textContent='Switching station…';
@@ -506,14 +629,20 @@ function initializeStation(){
     audio.src=station.stream;
 
     updateStationButtons();
+    if(station.provider==='live365'){
+        syncnote.style.display='none';
+        showCurrent({song:station.source,artist:''});
+    }
     loadInitialMetadata();
     connectMetadata();
+    startLive365();
 }
 
 document.addEventListener('visibilitychange',()=>{
     if(!document.hidden){
         loadInitialMetadata();
         connectMetadata();
+        if(STATIONS[stationId].provider==='live365')refreshLive365();
     }
 });
 
