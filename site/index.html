@@ -425,9 +425,9 @@ const live365ArtworkCache=new Map();
 
 function normalizedMusicText(value){
     return (value||'').toLowerCase().normalize('NFKD')
-        .replace(/[\\u0300-\\u036f]/g,'')
-        .replace(/\\([^)]*\\b(?:remix|edit|version|feat\\.?|ft\\.?)\\b[^)]*\\)/gi,'')
-        .replace(/\\b(?:feat\\.?|ft\\.?)\\b.*$/i,'')
+        .replace(/[\u0300-\u036f]/g,'')
+        .replace(/\([^)]*\b(?:remix|edit|version|feat\.?|ft\.?)\b[^)]*\)/gi,'')
+        .replace(/\b(?:feat\.?|ft\.?)\b.*$/i,'')
         .replace(/[^a-z0-9]+/g,' ').trim();
 }
 
@@ -469,8 +469,8 @@ function live365Track(data){
     const t=data['current-track'];
     const fallback=data['station-logo']||data.logo||'';
     if(!t||!t.title)return {song:data.name||STATIONS[stationId].source,artist:'',cover:fallback};
-    const title=t.title.replace(/\\s*#\\d+\\s*-?\\s*$/,'').trim();
-    const realArt=t.art&&!/blankart\\.jpg|station_profile_default|default.*art|placeholder/i.test(t.art);
+    const title=t.title.replace(/\s*#\d+\s*-?\s*$/,'').trim();
+    const realArt=t.art&&!/blankart\.jpg|station_profile_default|default.*art|placeholder/i.test(t.art);
     return {id:[t.start,t.artist,t.title].join('|'),song:title||t.title,
         artist:t.artist||'',cover:realArt?t.art:fallback,needsArtwork:!realArt};
 }
