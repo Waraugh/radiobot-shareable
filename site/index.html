@@ -421,13 +421,58 @@ function connectMetadata(generation=stationGeneration){
 }
 
 // Live365 reports the track currently on air; it does not provide Up Next.
+const live365ArtworkCache=new Map();
+
+function normalizedMusicText(value){
+    return (value||'').toLowerCase().normalize('NFKD')
+        .replace(/[\\u0300-\\u036f]/g,'')
+        .replace(/\\([^)]*\\b(?:remix|edit|version|feat\\.?|ft\\.?)\\b[^)]*\\)/gi,'')
+        .replace(/\\b(?:feat\\.?|ft\\.?)\\b.*$/i,'')
+        .replace(/[^a-z0-9]+/g,' ').trim();
+}
+
+async function lookupLive365Artwork(track,generation){
+    if(!track.needsArtwork||!track.artist||!track.song)return;
+    const key=normalizedMusicText(track.artist)+'|'+normalizedMusicText(track.song);
+    if(live365ArtworkCache.has(key)){
+        const cached=live365ArtworkCache.get(key);
+        if(cached&&generation===stationGeneration&&current&&sameTrack(current,track))
+            showCurrent({...current,cover:cached});
+        return;
+    }
+    try{
+        const params=new URLSearchParams({
+            term:track.artist+' '+track.song,entity:'song',limit:'15'
+        });
+        const response=await fetch('https://itunes.apple.com/search?'+params);
+        if(!response.ok)return;
+        const data=await response.json();
+        const artistKey=normalizedMusicText(track.artist);
+        const titleKey=normalizedMusicText(track.song);
+        const match=(data.results||[]).find(item=>
+            normalizedMusicText(item.trackName)===titleKey&&
+            (normalizedMusicText(item.artistName)===artistKey||
+             normalizedMusicText(item.artistName).includes(artistKey)||
+             artistKey.includes(normalizedMusicText(item.artistName)))
+        );
+        const cover=match&&match.artworkUrl100?
+            match.artworkUrl100.replace(/100x100bb/, '600x600bb'):'';
+        live365ArtworkCache.set(key,cover);
+        if(live365ArtworkCache.size>300)
+            live365ArtworkCache.delete(live365ArtworkCache.keys().next().value);
+        if(cover&&generation===stationGeneration&&current&&sameTrack(current,track))
+            showCurrent({...current,cover});
+    }catch(e){}
+}
+
 function live365Track(data){
     const t=data['current-track'];
     const fallback=data['station-logo']||data.logo||'';
     if(!t||!t.title)return {song:data.name||STATIONS[stationId].source,artist:'',cover:fallback};
-    const title=t.title.replace(/\s*#\d+\s*-?\s*$/,'').trim();
-    const trackArt=t.art&&!/blankart\.jpg|station_profile_default|default.*art|placeholder/i.test(t.art)?t.art:fallback;
-    return {id:[t.start,t.artist,t.title].join('|'),song:title||t.title,artist:t.artist||'',cover:trackArt};
+    const title=t.title.replace(/\\s*#\\d+\\s*-?\\s*$/,'').trim();
+    const realArt=t.art&&!/blankart\\.jpg|station_profile_default|default.*art|placeholder/i.test(t.art);
+    return {id:[t.start,t.artist,t.title].join('|'),song:title||t.title,
+        artist:t.artist||'',cover:realArt?t.art:fallback,needsArtwork:!realArt};
 }
 
 async function refreshLive365(generation=stationGeneration){
@@ -439,7 +484,10 @@ async function refreshLive365(generation=stationGeneration){
         const data=await response.json();
         if(generation!==stationGeneration)return;
         const track=live365Track(data);
-        if(!current||!sameTrack(current,track))showCurrent(track);
+        if(!current||!sameTrack(current,track)){
+            showCurrent(track);
+            lookupLive365Artwork(track,generation);
+        }
         hidePending();
     }catch(e){
         if(generation===stationGeneration&&!current)
