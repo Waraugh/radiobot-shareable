@@ -425,8 +425,8 @@ function live365Track(data){
     const t=data['current-track'];
     const fallback=data['station-logo']||data.logo||'';
     if(!t||!t.title)return {song:data.name||STATIONS[stationId].source,artist:'',cover:fallback};
-    const title=t.title.replace(/\\s*#\\d+\\s*-?\\s*$/,'').trim();
-    const trackArt=t.art&&!/blankart\\.jpg|station_profile_default/i.test(t.art)?t.art:fallback;
+    const title=t.title.replace(/\s*#\d+\s*-?\s*$/,'').trim();
+    const trackArt=t.art&&!/blankart\.jpg|station_profile_default|default.*art|placeholder/i.test(t.art)?t.art:fallback;
     return {id:[t.start,t.artist,t.title].join('|'),song:title||t.title,artist:t.artist||'',cover:trackArt};
 }
 
