@@ -187,6 +187,7 @@ let pending=null;
 let promotionTimer=null;
 let socket=null;
 let reconnectTimer=null;
+let live365Timer=null;
 let stationGeneration=0;
 
 let stationId=localStorage.getItem('ricanRadioStation');
@@ -419,6 +420,41 @@ function connectMetadata(generation=stationGeneration){
     }
 }
 
+// Live365 reports the track currently on air; it does not provide Up Next.
+function live365Track(data){
+    const t=data['current-track'];
+    const fallback=data['station-logo']||data.logo||'';
+    if(!t||!t.title)return {song:data.name||STATIONS[stationId].source,artist:'',cover:fallback};
+    const title=t.title.replace(/\\s*#\\d+\\s*-?\\s*$/,'').trim();
+    const trackArt=t.art&&!/blankart\\.jpg|station_profile_default/i.test(t.art)?t.art:fallback;
+    return {id:[t.start,t.artist,t.title].join('|'),song:title||t.title,artist:t.artist||'',cover:trackArt};
+}
+
+async function refreshLive365(generation=stationGeneration){
+    const station=STATIONS[stationId];
+    if(station.provider!=='live365')return;
+    try{
+        const response=await fetch('https://api.live365.com/v1/station/'+station.stream.split('/').pop(),{cache:'no-store'});
+        if(!response.ok||generation!==stationGeneration)return;
+        const data=await response.json();
+        if(generation!==stationGeneration)return;
+        const track=live365Track(data);
+        if(!current||!sameTrack(current,track))showCurrent(track);
+        hidePending();
+    }catch(e){
+        if(generation===stationGeneration&&!current)
+            showCurrent({song:station.source,artist:''});
+    }
+}
+
+function startLive365(generation=stationGeneration){
+    clearInterval(live365Timer);
+    live365Timer=null;
+    if(STATIONS[stationId].provider!=='live365')return;
+    refreshLive365(generation);
+    live365Timer=setInterval(()=>refreshLive365(generation),15000);
+}
+
 function resetTrackDisplay(){
     current=null;
     pending=null;
@@ -461,6 +497,8 @@ async function selectStation(id){
     const generation=stationGeneration;
 
     clearTimeout(reconnectTimer);
+    clearInterval(live365Timer);
+    live365Timer=null;
 
     if(socket){
         const oldSocket=socket;
@@ -486,6 +524,7 @@ async function selectStation(id){
 
     loadInitialMetadata(generation);
     connectMetadata(generation);
+    startLive365(generation);
 
     if(wasPlaying){
         status.textContent='Switching station…';
@@ -521,12 +560,14 @@ function initializeStation(){
     }
     loadInitialMetadata();
     connectMetadata();
+    startLive365();
 }
 
 document.addEventListener('visibilitychange',()=>{
     if(!document.hidden){
         loadInitialMetadata();
         connectMetadata();
+        if(STATIONS[stationId].provider==='live365')refreshLive365();
     }
 });
 
