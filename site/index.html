@@ -51,6 +51,23 @@ body{margin:0;min-height:100vh;background:#0b0b0b;color:#fff;display:grid;place-
 .art{width:94px;height:94px;flex-basis:94px}
 .song{font-size:1.25rem}
 }
+
+/* Station library controls */
+.stationfilters{display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:thin}
+.filterbtn{flex:0 0 auto;border:1px solid #384548;border-radius:999px;background:#202829;color:#c2cacc;padding:8px 11px;font-size:.76rem;font-weight:750;cursor:pointer}
+.filterbtn.active{background:#48e0d3;color:#092427;border-color:#48e0d3}
+.stations{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-bottom:18px}
+.stationtile{display:flex;align-items:center;min-width:0;border:1px solid #353535;background:#202020;border-radius:12px;overflow:hidden}
+.stationtile.active{border-color:#48e0d3;background:#173d3c;box-shadow:0 0 0 1px #48e0d333}
+.stationtile .stationbtn{min-width:0;flex:1;text-align:left;border:0;border-radius:0;background:transparent;color:#e3e6e6;white-space:normal;padding:11px 5px 11px 12px}
+.stationtile .stationbtn.active{background:transparent;color:#6df3e5}
+.stationtile .stationbtn.active:before{content:'▮▮';font-size:.66rem;margin-right:6px}
+.favbtn{border:0;background:transparent;color:#79898c;padding:11px 10px;cursor:pointer;font-size:1.1rem}
+.favbtn.active{color:#ffce6b}
+.playercontrols{display:grid;grid-template-columns:52px minmax(0,1fr) 52px;gap:8px}
+.stationnav{border:1px solid #384548;border-radius:15px;background:#202829;color:#b7f3ed;font-size:1.3rem;cursor:pointer}
+.stationart{width:108px;height:108px;flex:0 0 108px;border-radius:14px;background:linear-gradient(145deg,#205c5b,#10262b);display:flex;align-items:center;justify-content:center;color:#63e4d8;font-size:2.6rem;font-weight:900;letter-spacing:-.1em}
+@media(max-width:390px){.stationart{width:94px;height:94px;flex-basis:94px}.stationtile .stationbtn{font-size:.73rem}}
 </style>
 </head>
 
@@ -61,6 +78,7 @@ body{margin:0;min-height:100vh;background:#0b0b0b;color:#fff;display:grid;place-
 <div class="station">RICAN RADIO</div>
 <div class="source" id="source">2000s Rock</div>
 
+<div class="stationfilters" id="stationfilters" aria-label="Station categories"></div>
 <div class="stations" id="stations">
 <button class="stationbtn" data-station="2000s">2000s</button>
 <button class="stationbtn" data-station="90s">90s</button>
@@ -71,8 +89,17 @@ body{margin:0;min-height:100vh;background:#0b0b0b;color:#fff;display:grid;place-
 <button class="stationbtn" data-station="rockparty">Rockparty</button>
 <button class="stationbtn" data-station="hits">Top 40</button>
 <button class="stationbtn" data-station="hiphop">Hip-Hop / R&B</button>
-<button class="stationbtn" data-station="oldschool">Old School Hip-Hop</button>
 <button class="stationbtn" data-station="country">Country</button>
+<button class="stationbtn" data-station="fm00shiphop">00s Hip-Hop</button>
+<button class="stationbtn" data-station="90s90s_bawue">90s Hits</button>
+<button class="stationbtn" data-station="90s90s_rnb">90s R&B</button>
+<button class="stationbtn" data-station="90s90s_90s00s">90s & 00s</button>
+<button class="stationbtn" data-station="90s90s_hessen">90s Mix</button>
+<button class="stationbtn" data-station="90s90s_house">90s House</button>
+<button class="stationbtn" data-station="90s90s_lovesongs">Love Songs</button>
+<button class="stationbtn" data-station="90s90s_nrw">90s Favorites</button>
+<button class="stationbtn" data-station="90s90s_techno">90s Techno</button>
+<button class="stationbtn" data-station="90s90s_boygroup">Boy Bands</button>
 </div>
 
 <div class="label">Now Playing</div>
@@ -97,7 +124,7 @@ body{margin:0;min-height:100vh;background:#0b0b0b;color:#fff;display:grid;place-
 </div>
 </div>
 
-<button class="play" id="play">▶ Play</button>
+<div class="playercontrols"><button class="stationnav" id="prevStation" aria-label="Previous station">❮</button><button class="play" id="play">▶ Play</button><button class="stationnav" id="nextStation" aria-label="Next station">❯</button></div>
 <div class="status" id="status">Ready</div>
 <div class="syncnote" id="syncnote">Track info syncs after the next song change.</div>
 
@@ -157,8 +184,17 @@ const STATIONS={
     },
     'hits':{label:'Top 40',source:"Today's Hottest Hits",stream:'https://streaming.live365.com/a85985',provider:'live365'},
     'hiphop':{label:'Hip-Hop / R&B',source:"Today's Hottest Hip Hop",stream:'https://streaming.live365.com/a99954',provider:'live365'},
-    'oldschool':{label:'Old School Hip-Hop',source:'Beats 93',stream:'https://streaming.live365.com/a88137',provider:'live365'},
-    'country':{label:'Country',source:"Today's Hottest Country",stream:'https://streaming.live365.com/a13336',provider:'live365'}
+    'country':{label:'Country',source:"Today's Hottest Country",stream:'https://streaming.live365.com/a13336',provider:'live365'},
+    'fm00shiphop':{label:'1.FM 00s Hip-Hop',source:'1.FM 00s Hip-Hop',stream:'https://strm112.1.fm/00shiphop_mobile_mp3',provider:'external'},
+    '90s90s_bawue':{label:'90s90s BAWÜ',source:'90s90s BAWÜ',stream:'https://streams.90s90s.de/bawue/mp3-192/streams.90s90s.de/',provider:'external'},
+    '90s90s_rnb':{label:'90s90s RnB',source:'90s90s RnB',stream:'https://streams.90s90s.de/rnb/mp3-192/streams.90s90s.de/',provider:'external'},
+    '90s90s_90s00s':{label:'90s90s 90s00s',source:'90s90s 90s00s',stream:'https://streams.90s90s.de/90s00s/mp3-192/streams.90s90s.de/',provider:'external'},
+    '90s90s_hessen':{label:'90s90s HESSEN',source:'90s90s HESSEN',stream:'https://streams.90s90s.de/hessen/mp3-192/streams.90s90s.de/',provider:'external'},
+    '90s90s_house':{label:'90s90s House',source:'90s90s House',stream:'https://streams.90s90s.de/house/mp3-192/streams.90s90s.de/',provider:'external'},
+    '90s90s_lovesongs':{label:'90s90s Lovesongs',source:'90s90s Lovesongs',stream:'https://streams.90s90s.de/love/mp3-192/streams.90s90s.de/',provider:'external'},
+    '90s90s_nrw':{label:'90s90s NRW',source:'90s90s NRW',stream:'https://streams.90s90s.de/nrw/mp3-192/streams.90s90s.de/',provider:'external'},
+    '90s90s_techno':{label:'90s90s Techno',source:'90s90s Techno',stream:'https://streams.90s90s.de/techno/mp3-192/streams.90s90s.de/',provider:'external'},
+    '90s90s_boygroup':{label:'90s90s Boygroup',source:'90s90s Boygroup',stream:'https://streams.90s90s.de/boygroup/mp3-192/streams.90s90s.de/',provider:'external'}
 };
 
 /*
@@ -173,6 +209,75 @@ const status=document.getElementById('status');
 const syncnote=document.getElementById('syncnote');
 const source=document.getElementById('source');
 const stationButtons=[...document.querySelectorAll('.stationbtn')];
+
+const stationOrder=stationButtons.map(button=>button.dataset.station);
+const stationCategories={
+    '2000s':'Rock','90s':'Rock','alternative':'Rock','punk':'Rock','hardrock':'Rock','classic':'Rock','rockparty':'Rock',
+    'hits':'Pop/Mix','hiphop':'Hip-Hop/R&B','country':'Pop/Mix','fm00shiphop':'Hip-Hop/R&B',
+    '90s90s_bawue':'Pop/Mix','90s90s_rnb':'Hip-Hop/R&B','90s90s_90s00s':'Pop/Mix','90s90s_hessen':'Pop/Mix',
+    '90s90s_house':'Dance','90s90s_lovesongs':'Pop/Mix','90s90s_nrw':'Pop/Mix','90s90s_techno':'Dance','90s90s_boygroup':'Pop/Mix'
+};
+const categories=['All','Favorites','Rock','Hip-Hop/R&B','Dance','Pop/Mix'];
+const filters=document.getElementById('stationfilters');
+
+let activeCategory='All';
+let favorites=[];
+try{
+    const saved=JSON.parse(localStorage.getItem('ricanRadioFavorites')||'[]');
+    if(Array.isArray(saved))favorites=saved.filter(id=>stationOrder.includes(id));
+}catch(e){}
+function renderStationLibrary(){
+    document.querySelectorAll('.filterbtn').forEach(button=>{
+        button.classList.toggle('active',button.dataset.category===activeCategory);
+        button.setAttribute('aria-pressed',String(button.dataset.category===activeCategory));
+    });
+    stationButtons.forEach(button=>{
+        const id=button.dataset.station;
+        const tile=button.parentElement;
+        const favorite=tile.querySelector('.favbtn');
+        tile.hidden=!(activeCategory==='All'||(activeCategory==='Favorites'&&favorites.includes(id))||stationCategories[id]===activeCategory);
+        tile.style.display=tile.hidden?'none':'flex';
+        tile.classList.toggle('active',id===stationId);
+        favorite.classList.toggle('active',favorites.includes(id));
+        favorite.setAttribute('aria-pressed',String(favorites.includes(id)));
+        favorite.setAttribute('aria-label',(favorites.includes(id)?'Remove ':'Add ')+button.textContent+' '+(favorites.includes(id)?'from':'to')+' favorites');
+    });
+}
+categories.forEach(category=>{
+    const button=document.createElement('button');
+    button.className='filterbtn';
+    button.type='button';
+    button.dataset.category=category;
+    button.textContent=category==='Favorites'?'★ Favorites':category;
+    button.addEventListener('click',()=>{activeCategory=category;renderStationLibrary();});
+    filters.appendChild(button);
+});
+stationButtons.forEach(button=>{
+    const tile=document.createElement('div');
+    tile.className='stationtile';
+    button.parentNode.insertBefore(tile,button);
+    tile.appendChild(button);
+    const favorite=document.createElement('button');
+    favorite.type='button';
+    favorite.className='favbtn';
+    favorite.textContent='★';
+    tile.appendChild(favorite);
+    favorite.addEventListener('click',()=>{
+        const id=button.dataset.station;
+        favorites=favorites.includes(id)?favorites.filter(value=>value!==id):[...favorites,id];
+        localStorage.setItem('ricanRadioFavorites',JSON.stringify(favorites));
+        renderStationLibrary();
+    });
+});
+function cycleStation(direction){
+    const pool=activeCategory==='Favorites'&&favorites.length?stationOrder.filter(id=>favorites.includes(id)):stationOrder;
+    const index=pool.indexOf(stationId);
+    const next=index<0?(direction>0?0:pool.length-1):(index+direction+pool.length)%pool.length;
+    selectStation(pool[next]);
+}
+document.getElementById('prevStation').addEventListener('click',()=>cycleStation(-1));
+document.getElementById('nextStation').addEventListener('click',()=>cycleStation(1));
+
 
 const song=document.getElementById('song');
 const artist=document.getElementById('artist');
@@ -191,6 +296,7 @@ let promotionTimer=null;
 let socket=null;
 let reconnectTimer=null;
 let live365Timer=null;
+let icyTimer=null;
 let stationGeneration=0;
 
 let stationId=localStorage.getItem('ricanRadioStation');
@@ -246,12 +352,14 @@ function setImage(element,url){
     element.style.display='none';
     element.removeAttribute('src');
 
+
     if(!url)return;
 
-    element.onload=()=>element.style.display='block';
+    element.onload=()=>{element.style.display='block';};
     element.onerror=()=>{
         element.style.display='none';
         element.removeAttribute('src');
+        if(element===art)stationArt.style.display='flex';
     };
 
     element.src=url;
@@ -356,7 +464,7 @@ function scheduleTrack(track){
 
 async function loadInitialMetadata(generation=stationGeneration){
     const station=STATIONS[stationId];
-    if(station.provider==='live365')return;
+    if(!station.channel)return;
 
     try{
         const response=await fetch(
@@ -376,7 +484,7 @@ async function loadInitialMetadata(generation=stationGeneration){
 
 function connectMetadata(generation=stationGeneration){
     const station=STATIONS[stationId];
-    if(station.provider==='live365')return;
+    if(!station.channel)return;
 
     if(socket&&(socket.readyState===WebSocket.OPEN||
                 socket.readyState===WebSocket.CONNECTING))
@@ -533,6 +641,30 @@ function startLive365(generation=stationGeneration){
     live365Timer=setInterval(()=>refreshLive365(generation),15000);
 }
 
+
+// Experimental ICY metadata for 90s Hits only. Requires Netlify Functions.
+async function refreshIcy(generation=stationGeneration){
+    if(stationId!=='90s90s_bawue')return;
+    try{
+        const response=await fetch('/.netlify/functions/icy-now-playing',{cache:'no-store'});
+        if(!response.ok||generation!==stationGeneration)return;
+        const data=await response.json();
+        if(generation!==stationGeneration||!data.artist||!data.song)return;
+        const track={id:data.artist+'|'+data.song,artist:data.artist,song:data.song,needsArtwork:true};
+        if(!current||!sameTrack(current,track)){
+            showCurrent(track);
+            lookupLive365Artwork(track,generation);
+        }
+    }catch(e){}
+}
+function startIcy(generation=stationGeneration){
+    clearInterval(icyTimer);
+    icyTimer=null;
+    if(stationId!=='90s90s_bawue')return;
+    refreshIcy(generation);
+    icyTimer=setInterval(()=>refreshIcy(generation),20000);
+}
+
 function resetTrackDisplay(){
     current=null;
     pending=null;
@@ -552,12 +684,14 @@ function resetTrackDisplay(){
     art.style.display='none';
     art.removeAttribute('src');
 
+
     hidePending();
 
     document.title='Rican Radio';
 }
 
 function updateStationButtons(){
+    renderStationLibrary();
     stationButtons.forEach(button=>{
         button.classList.toggle(
             'active',
@@ -577,6 +711,8 @@ async function selectStation(id){
     clearTimeout(reconnectTimer);
     clearInterval(live365Timer);
     live365Timer=null;
+    clearInterval(icyTimer);
+    icyTimer=null;
 
     if(socket){
         const oldSocket=socket;
@@ -594,15 +730,16 @@ async function selectStation(id){
     source.textContent=station.source;
     updateStationButtons();
     resetTrackDisplay();
-    syncnote.style.display=station.provider==='live365'?'none':'block';
-    if(station.provider==='live365')showCurrent({song:station.source,artist:''});
+    syncnote.style.display=station.channel?'block':'none';
+    if(station.provider==='live365'||station.provider==='external'||station.provider==='embedded')showCurrent({song:station.source,artist:''});
 
-    audio.src=station.stream;
-    audio.load();
+    if(station.stream){audio.src=station.stream;audio.load();}
+    else{audio.removeAttribute('src');audio.load();}
 
     loadInitialMetadata(generation);
     connectMetadata(generation);
     startLive365(generation);
+    startIcy(generation);
 
     if(wasPlaying){
         status.textContent='Switching station…';
@@ -629,16 +766,17 @@ function initializeStation(){
     const station=STATIONS[stationId];
 
     source.textContent=station.source;
-    audio.src=station.stream;
+    if(station.stream)audio.src=station.stream;
 
     updateStationButtons();
-    if(station.provider==='live365'){
+    if(station.provider==='live365'||station.provider==='external'||station.provider==='embedded'){
         syncnote.style.display='none';
         showCurrent({song:station.source,artist:''});
     }
     loadInitialMetadata();
     connectMetadata();
     startLive365();
+    startIcy();
 }
 
 document.addEventListener('visibilitychange',()=>{
@@ -646,6 +784,7 @@ document.addEventListener('visibilitychange',()=>{
         loadInitialMetadata();
         connectMetadata();
         if(STATIONS[stationId].provider==='live365')refreshLive365();
+        if(stationId==='90s90s_bawue')refreshIcy();
     }
 });
 
