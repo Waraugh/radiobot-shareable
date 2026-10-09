@@ -1,47 +1,57 @@
-// Experimental, single-station ICY metadata probe. Never accepts arbitrary URLs.
+// Experimental 90s Hits ICY reader. Fixed upstream URLs; no user-provided proxy target.
+const https=require('node:https');
 const STREAMS=['https://streams.90s90s.de/bawue/mp3-192/streams.90s90s.de/','https://streams.90s90s.de/bawue/mp3-128/streams.90s90s.de/'];
-let cached=null, cachedAt=0;
-exports.handler=async()=>{
-  const headers={'Content-Type':'application/json','Cache-Control':'no-store'};
-  if(cached && Date.now()-cachedAt<15000)return {statusCode:200,headers,body:JSON.stringify(cached)};
-  const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),7000);
-  try{
-    let response, failures=[];
-    for(const url of STREAMS){
-      try{response=await fetch(url,{headers:{'Icy-MetaData':'1','User-Agent':'RicanRadioMetadataTest/1.0'},signal:controller.signal});break;}
-      catch(e){failures.push({endpoint:url.includes('mp3-192')?'192':'128',message:e.message,cause:e.cause?.code||e.cause?.message||'unknown'});}
+let cached=null,cachedAt=0;
+function probe(url,redirects=0){
+ return new Promise((resolve,reject)=>{
+  const request=https.get(url,{insecureHTTPParser:true,headers:{'Icy-MetaData':'1','User-Agent':'RicanRadioMetadataTest/1.0'},timeout:6500},response=>{
+   const code=response.statusCode||0;
+   if(code>=300&&code<400&&response.headers.location){
+    response.destroy();
+    if(redirects>=3)return reject(new Error('Too many redirects'));
+    const next=new URL(response.headers.location,url);
+    if(next.protocol!=='https:'||!/(^|\\.)90s90s\\.de$/.test(next.hostname))return reject(new Error('Unexpected redirect host'));
+    return resolve(probe(next.toString(),redirects+1));
+   }
+   if(code!==200){response.destroy();return reject(new Error('HTTP '+code));}
+   const interval=Number(response.headers['icy-metaint']);
+   if(!Number.isInteger(interval)||interval<1||interval>1048576){response.destroy();return reject(new Error('No ICY metadata interval'));}
+   let chunks=[],length=0,needed=interval+1,metaLength=null;
+   response.on('data',chunk=>{
+    chunks.push(chunk);length+=chunk.length;
+    if(length<needed)return;
+    let buf=Buffer.concat(chunks,length);
+    if(metaLength===null){
+     metaLength=buf[interval]*16;
+     if(metaLength>4080){response.destroy();return reject(new Error('Invalid ICY block length'));}
+     needed=interval+1+metaLength;
     }
-    if(!response)return {statusCode:503,headers,body:JSON.stringify({error:'Stream connection failed',failures})};
-    if(!response.ok)throw new Error('Stream HTTP '+response.status);
-    const interval=Number(response.headers.get('icy-metaint'));
-    if(!Number.isInteger(interval)||interval<1||interval>1048576)throw new Error('No ICY metadata interval');
-    const reader=response.body.getReader();
-    let buffer=new Uint8Array(0);
-    const needed=interval+1;
-    while(buffer.length<needed){
-      const {value,done}=await reader.read();
-      if(done)throw new Error('Stream ended before metadata');
-      const merged=new Uint8Array(buffer.length+value.length);
-      merged.set(buffer);merged.set(value,buffer.length);buffer=merged;
-    }
-    const length=buffer[interval]*16;
-    if(length>4080)throw new Error('Invalid ICY block length');
-    while(buffer.length<needed+length){
-      const {value,done}=await reader.read();
-      if(done)throw new Error('Stream ended during metadata');
-      const merged=new Uint8Array(buffer.length+value.length);
-      merged.set(buffer);merged.set(value,buffer.length);buffer=merged;
-    }
-    const raw=new TextDecoder('utf-8').decode(buffer.subarray(needed,needed+length)).replace(/\0/g,'');
+    if(length<needed)return;
+    const raw=buf.subarray(interval+1,needed).toString('utf8').replace(/\\0/g,'');
+    response.destroy();
     const title=raw.match(/StreamTitle='([^']*)'/i)?.[1]?.trim()||'';
-    if(!title)throw new Error('Stream does not expose a song title');
-    const parts=title.split(/\s+-\s+/);
-    if(parts.length<2)throw new Error('Unrecognized title: '+title.slice(0,100));
-    const artist=parts.shift().trim(),song=parts.join(' - ').trim();
-    cached={artist,song,raw:title};cachedAt=Date.now();
-    return {statusCode:200,headers,body:JSON.stringify(cached)};
-  }catch(error){
-    return {statusCode:503,headers,body:JSON.stringify({error:String(error.message||error),cause:error.cause?.code||error.cause?.message||null})};
-  }finally{clearTimeout(timeout);controller.abort();}
+    if(!title)return reject(new Error('Stream does not expose a song title'));
+    const parts=title.split(/\\s+-\\s+/);
+    if(parts.length<2)return reject(new Error('Unrecognized title: '+title.slice(0,100)));
+    resolve({artist:parts.shift().trim(),song:parts.join(' - ').trim(),raw:title});
+   });
+   response.on('end',()=>reject(new Error('Stream ended before metadata')));
+   response.on('error',reject);
+  });
+  request.on('timeout',()=>request.destroy(new Error('Connection timed out')));
+  request.on('error',reject);
+ });
+}
+exports.handler=async()=>{
+ const headers={'Content-Type':'application/json','Cache-Control':'no-store'};
+ if(cached&&Date.now()-cachedAt<15000)return {statusCode:200,headers,body:JSON.stringify(cached)};
+ const failures=[];
+ for(const url of STREAMS){
+  try{
+   const result=await probe(url);
+   cached=result;cachedAt=Date.now();
+   return {statusCode:200,headers,body:JSON.stringify(result)};
+  }catch(e){failures.push({endpoint:url.includes('mp3-192')?'192':'128',error:e.message,code:e.code||null});}
+ }
+ return {statusCode:503,headers,body:JSON.stringify({error:'ICY probe failed',failures})};
 };
