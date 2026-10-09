@@ -1,5 +1,5 @@
 // Experimental, single-station ICY metadata probe. Never accepts arbitrary URLs.
-const STREAM='https://streams.90s90s.de/bawue/mp3-192/streams.90s90s.de/';
+const STREAMS=['https://streams.90s90s.de/bawue/mp3-192/streams.90s90s.de/','https://streams.90s90s.de/bawue/mp3-128/streams.90s90s.de/'];
 let cached=null, cachedAt=0;
 exports.handler=async()=>{
   const headers={'Content-Type':'application/json','Cache-Control':'no-store'};
@@ -7,7 +7,12 @@ exports.handler=async()=>{
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),7000);
   try{
-    const response=await fetch(STREAM,{headers:{'Icy-MetaData':'1','User-Agent':'RicanRadioMetadataTest/1.0'},signal:controller.signal});
+    let response, failures=[];
+    for(const url of STREAMS){
+      try{response=await fetch(url,{headers:{'Icy-MetaData':'1','User-Agent':'RicanRadioMetadataTest/1.0'},signal:controller.signal});break;}
+      catch(e){failures.push({endpoint:url.includes('mp3-192')?'192':'128',message:e.message,cause:e.cause?.code||e.cause?.message||'unknown'});}
+    }
+    if(!response)return {statusCode:503,headers,body:JSON.stringify({error:'Stream connection failed',failures})};
     if(!response.ok)throw new Error('Stream HTTP '+response.status);
     const interval=Number(response.headers.get('icy-metaint'));
     if(!Number.isInteger(interval)||interval<1||interval>1048576)throw new Error('No ICY metadata interval');
@@ -37,6 +42,6 @@ exports.handler=async()=>{
     cached={artist,song,raw:title};cachedAt=Date.now();
     return {statusCode:200,headers,body:JSON.stringify(cached)};
   }catch(error){
-    return {statusCode:503,headers,body:JSON.stringify({error:String(error.message||error)})};
+    return {statusCode:503,headers,body:JSON.stringify({error:String(error.message||error),cause:error.cause?.code||error.cause?.message||null})};
   }finally{clearTimeout(timeout);controller.abort();}
 };
