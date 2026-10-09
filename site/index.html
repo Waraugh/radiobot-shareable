@@ -68,6 +68,45 @@ body{margin:0;min-height:100vh;background:#0b0b0b;color:#fff;display:grid;place-
 .stationnav{border:1px solid #384548;border-radius:15px;background:#202829;color:#b7f3ed;font-size:1.3rem;cursor:pointer}
 .stationart{width:108px;height:108px;flex:0 0 108px;border-radius:14px;background:linear-gradient(145deg,#205c5b,#10262b);display:flex;align-items:center;justify-content:center;color:#63e4d8;font-size:2.6rem;font-weight:900;letter-spacing:-.1em}
 @media(max-width:390px){.stationart{width:94px;height:94px;flex-basis:94px}.stationtile .stationbtn{font-size:.73rem}}
+
+/* Compact, phone-first layout: no sideways scrolling or pinch-to-fit required. */
+html{width:100%;overflow-x:hidden}
+body{min-width:0}
+.card{min-width:0}
+.stationfilters{flex-wrap:wrap;overflow-x:visible;gap:5px;padding-bottom:10px}
+.filterbtn{padding:6px 9px;font-size:.72rem}
+@media(max-width:600px){
+ body{display:block;padding:8px;min-height:100dvh}
+ .card{width:100%;max-width:none;padding:15px 12px;border-radius:17px;box-shadow:none}
+ .eyebrow{font-size:.66rem}
+ .station{font-size:1.65rem;margin:4px 0}
+ .source{font-size:.78rem;margin-bottom:10px}
+ .stations{gap:6px;padding-bottom:12px}
+ .stationtile{border-radius:9px}
+ .stationtile .stationbtn{font-size:.76rem;padding:8px 2px 8px 8px;line-height:1.15;overflow-wrap:anywhere}
+ .stationtile .stationbtn.active:before{margin-right:3px}
+ .favbtn{padding:8px 7px;font-size:1rem}
+ .label{font-size:.67rem}
+ .track{gap:10px;min-height:0;margin:8px 0 14px}
+ .art{width:74px;height:74px;flex-basis:74px;border-radius:10px}
+ .song{font-size:1.12rem}
+ .artist{font-size:.86rem;margin-top:4px}
+ .loading{font-size:1rem}
+ .upnext{padding-top:10px;margin-bottom:12px}
+ .uptrack{margin-top:7px}
+ .play{padding:12px;font-size:1rem;border-radius:11px}
+ .playercontrols{grid-template-columns:43px minmax(0,1fr) 43px;gap:6px}
+ .stationnav{border-radius:11px}
+ .status{margin-top:8px;font-size:.76rem}
+ .syncnote{font-size:.68rem}
+ .install{margin-top:13px;padding-top:11px;font-size:.75rem}
+}
+@media(max-width:350px){
+ .card{padding:12px 9px}
+ .filterbtn{font-size:.68rem;padding:6px 7px}
+ .stationtile .stationbtn{font-size:.69rem}
+ .favbtn{padding:7px 5px}
+}
 </style>
 </head>
 
