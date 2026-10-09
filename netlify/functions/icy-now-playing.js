@@ -10,7 +10,7 @@ function probe(url,redirects=0){
     response.destroy();
     if(redirects>=3)return reject(new Error('Too many redirects'));
     const next=new URL(response.headers.location,url);
-    if(next.protocol!=='https:'||!/(^|\\.)90s90s\\.de$/.test(next.hostname))return reject(new Error('Unexpected redirect host'));
+    if(next.protocol!=='https:'||!/(^|\\.)(90s90s\\.de|radiobob\\.de|radio\\.de|streamabc\\.net|regiocast\\.de|laut\\.fm)$/.test(next.hostname))return reject(new Error('Unexpected redirect host: '+next.hostname));
     return resolve(probe(next.toString(),redirects+1));
    }
    if(code!==200){response.destroy();return reject(new Error('HTTP '+code));}
