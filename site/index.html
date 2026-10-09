@@ -296,6 +296,7 @@ let promotionTimer=null;
 let socket=null;
 let reconnectTimer=null;
 let live365Timer=null;
+let icyTimer=null;
 let stationGeneration=0;
 
 let stationId=localStorage.getItem('ricanRadioStation');
@@ -640,6 +641,30 @@ function startLive365(generation=stationGeneration){
     live365Timer=setInterval(()=>refreshLive365(generation),15000);
 }
 
+
+// Experimental ICY metadata for 90s Hits only. Requires Netlify Functions.
+async function refreshIcy(generation=stationGeneration){
+    if(stationId!=='90s90s_bawue')return;
+    try{
+        const response=await fetch('/.netlify/functions/icy-now-playing',{cache:'no-store'});
+        if(!response.ok||generation!==stationGeneration)return;
+        const data=await response.json();
+        if(generation!==stationGeneration||!data.artist||!data.song)return;
+        const track={id:data.artist+'|'+data.song,artist:data.artist,song:data.song,needsArtwork:true};
+        if(!current||!sameTrack(current,track)){
+            showCurrent(track);
+            lookupLive365Artwork(track,generation);
+        }
+    }catch(e){}
+}
+function startIcy(generation=stationGeneration){
+    clearInterval(icyTimer);
+    icyTimer=null;
+    if(stationId!=='90s90s_bawue')return;
+    refreshIcy(generation);
+    icyTimer=setInterval(()=>refreshIcy(generation),20000);
+}
+
 function resetTrackDisplay(){
     current=null;
     pending=null;
@@ -686,6 +711,8 @@ async function selectStation(id){
     clearTimeout(reconnectTimer);
     clearInterval(live365Timer);
     live365Timer=null;
+    clearInterval(icyTimer);
+    icyTimer=null;
 
     if(socket){
         const oldSocket=socket;
@@ -712,6 +739,7 @@ async function selectStation(id){
     loadInitialMetadata(generation);
     connectMetadata(generation);
     startLive365(generation);
+    startIcy(generation);
 
     if(wasPlaying){
         status.textContent='Switching station…';
@@ -748,6 +776,7 @@ function initializeStation(){
     loadInitialMetadata();
     connectMetadata();
     startLive365();
+    startIcy();
 }
 
 document.addEventListener('visibilitychange',()=>{
@@ -755,6 +784,7 @@ document.addEventListener('visibilitychange',()=>{
         loadInitialMetadata();
         connectMetadata();
         if(STATIONS[stationId].provider==='live365')refreshLive365();
+        if(stationId==='90s90s_bawue')refreshIcy();
     }
 });
 
