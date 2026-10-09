@@ -73,6 +73,8 @@ body{margin:0;min-height:100vh;background:#0b0b0b;color:#fff;display:grid;place-
 <button class="stationbtn" data-station="hiphop">Hip-Hop / R&B</button>
 <button class="stationbtn" data-station="oldschool">Old School Hip-Hop</button>
 <button class="stationbtn" data-station="country">Country</button>
+<button class="stationbtn" data-station="fm00shiphop">1.FM 00s Hip-Hop</button>
+<button class="stationbtn" data-station="redhotexplicit">Red Hot 95 Explicit</button>
 </div>
 
 <div class="label">Now Playing</div>
@@ -158,7 +160,9 @@ const STATIONS={
     'hits':{label:'Top 40',source:"Today's Hottest Hits",stream:'https://streaming.live365.com/a85985',provider:'live365'},
     'hiphop':{label:'Hip-Hop / R&B',source:"Today's Hottest Hip Hop",stream:'https://streaming.live365.com/a99954',provider:'live365'},
     'oldschool':{label:'Old School Hip-Hop',source:'Beats 93',stream:'https://streaming.live365.com/a88137',provider:'live365'},
-    'country':{label:'Country',source:"Today's Hottest Country",stream:'https://streaming.live365.com/a13336',provider:'live365'}
+    'country':{label:'Country',source:"Today's Hottest Country",stream:'https://streaming.live365.com/a13336',provider:'live365'},
+    'fm00shiphop':{label:'1.FM 00s Hip-Hop',source:'1.FM 00s Hip-Hop',stream:'https://strm112.1.fm/00shiphop_mobile_mp3',provider:'external'},
+    'redhotexplicit':{label:'Red Hot 95 Explicit',source:'Red Hot 95 — Explicit',stream:'https://s2.citrus3.com:2000/stream',provider:'external'}
 };
 
 /*
@@ -356,7 +360,7 @@ function scheduleTrack(track){
 
 async function loadInitialMetadata(generation=stationGeneration){
     const station=STATIONS[stationId];
-    if(station.provider==='live365')return;
+    if(!station.channel)return;
 
     try{
         const response=await fetch(
@@ -376,7 +380,7 @@ async function loadInitialMetadata(generation=stationGeneration){
 
 function connectMetadata(generation=stationGeneration){
     const station=STATIONS[stationId];
-    if(station.provider==='live365')return;
+    if(!station.channel)return;
 
     if(socket&&(socket.readyState===WebSocket.OPEN||
                 socket.readyState===WebSocket.CONNECTING))
@@ -594,8 +598,8 @@ async function selectStation(id){
     source.textContent=station.source;
     updateStationButtons();
     resetTrackDisplay();
-    syncnote.style.display=station.provider==='live365'?'none':'block';
-    if(station.provider==='live365')showCurrent({song:station.source,artist:''});
+    syncnote.style.display=station.channel?'block':'none';
+    if(station.provider==='live365'||station.provider==='external')showCurrent({song:station.source,artist:''});
 
     audio.src=station.stream;
     audio.load();
@@ -632,7 +636,7 @@ function initializeStation(){
     audio.src=station.stream;
 
     updateStationButtons();
-    if(station.provider==='live365'){
+    if(station.provider==='live365'||station.provider==='external'){
         syncnote.style.display='none';
         showCurrent({song:station.source,artist:''});
     }
