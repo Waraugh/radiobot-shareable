@@ -52,6 +52,13 @@ body{margin:0;min-height:100vh;background:#0b0b0b;color:#fff;display:grid;place-
 .song{font-size:1.25rem}
 }
 
+/* Compact station metadata beneath the title */
+.streammeta{display:flex;align-items:center;flex-wrap:wrap;column-gap:8px;row-gap:3px;margin:0 0 10px}
+.streammeta .source{margin:0;font-size:.78rem}
+.streammeta .eyebrow,.streammeta .label{font-size:.68rem;letter-spacing:.08em;white-space:nowrap}
+.metasep{color:#666;font-size:.75rem}
+@media(max-width:600px){.streammeta{column-gap:6px;margin-bottom:7px}.streammeta .eyebrow,.streammeta .label{font-size:.59rem;letter-spacing:.035em}.streammeta .source{font-size:.72rem}}
+
 /* Station library controls */
 .stationfilters{display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:thin}
 .filterbtn{flex:0 0 auto;border:1px solid #384548;border-radius:999px;background:#202829;color:#c2cacc;padding:8px 11px;font-size:.76rem;font-weight:750;cursor:pointer}
@@ -113,35 +120,10 @@ body{min-width:0}
 <body>
 
 <main class="card">
-<div class="eyebrow">Live Stream</div>
 <div class="station">RICAN RADIO</div>
-<div class="source" id="source">2000s Rock</div>
+<div class="streammeta"><span class="eyebrow">Live Stream</span><span class="metasep">|</span><span class="source" id="source">2000s Rock</span><span class="metasep">|</span><span class="label">Now Playing</span></div>
 
-<div class="stationfilters" id="stationfilters" aria-label="Station categories"></div>
-<div class="stations" id="stations">
-<button class="stationbtn" data-station="2000s">2000s</button>
-<button class="stationbtn" data-station="90s">90s</button>
-<button class="stationbtn" data-station="alternative">Alternative</button>
-<button class="stationbtn" data-station="punk">Punk</button>
-<button class="stationbtn" data-station="hardrock">Hard Rock</button>
-<button class="stationbtn" data-station="classic">Classic</button>
-<button class="stationbtn" data-station="rockparty">Rockparty</button>
-<button class="stationbtn" data-station="hits">Top 40</button>
-<button class="stationbtn" data-station="hiphop">Hip-Hop / R&B</button>
-<button class="stationbtn" data-station="country">Country</button>
-<button class="stationbtn" data-station="fm00shiphop">00s Hip-Hop</button>
-<button class="stationbtn" data-station="90s90s_bawue">90s Hits</button>
-<button class="stationbtn" data-station="90s90s_rnb">90s R&B</button>
-<button class="stationbtn" data-station="90s90s_90s00s">90s & 00s</button>
-<button class="stationbtn" data-station="90s90s_hessen">90s Mix</button>
-<button class="stationbtn" data-station="90s90s_house">90s House</button>
-<button class="stationbtn" data-station="90s90s_lovesongs">Love Songs</button>
-<button class="stationbtn" data-station="90s90s_nrw">90s Favorites</button>
-<button class="stationbtn" data-station="90s90s_techno">90s Techno</button>
-<button class="stationbtn" data-station="90s90s_boygroup">Boy Bands</button>
-</div>
 
-<div class="label">Now Playing</div>
 
 <div class="track">
 <img class="art" id="art" alt="">
@@ -166,6 +148,38 @@ body{min-width:0}
 <div class="playercontrols"><button class="stationnav" id="prevStation" aria-label="Previous station">❮</button><button class="play" id="play">▶ Play</button><button class="stationnav" id="nextStation" aria-label="Next station">❯</button></div>
 <div class="status" id="status">Ready</div>
 <div class="syncnote" id="syncnote">Track info syncs after the next song change.</div>
+
+<div class="label" style="margin-top:20px;margin-bottom:8px">Stations</div>
+<div class="stationfilters" id="stationfilters" aria-label="Station categories"></div>
+<div class="stations" id="stations">
+<button class="stationbtn" data-station="2000s">2000s</button>
+<button class="stationbtn" data-station="90s">90s</button>
+<button class="stationbtn" data-station="alternative">Alternative</button>
+<button class="stationbtn" data-station="punk">Punk</button>
+<button class="stationbtn" data-station="hardrock">Hard Rock</button>
+<button class="stationbtn" data-station="classic">Classic</button>
+<button class="stationbtn" data-station="rockparty">Rockparty</button>
+<button class="stationbtn" data-station="hits">Top 40</button>
+<button class="stationbtn" data-station="hiphop">Hip-Hop / R&B</button>
+<button class="stationbtn" data-station="country">Country</button>
+<button class="stationbtn" data-station="fm00shiphop">00s Hip-Hop</button>
+<button class="stationbtn" data-station="90s90s_bawue">90s Hits</button>
+<button class="stationbtn" data-station="90s90s_rnb">90s R&B</button>
+<button class="stationbtn" data-station="90s90s_90s00s">90s & 00s</button>
+<button class="stationbtn" data-station="90s90s_hessen">90s Mix</button>
+<button class="stationbtn" data-station="90s90s_house">90s House</button>
+<button class="stationbtn" data-station="90s90s_lovesongs">Love Songs</button>
+<button class="stationbtn" data-station="90s90s_nrw">90s Favorites</button>
+<button class="stationbtn" data-station="90s90s_techno">90s Techno</button>
+<button class="stationbtn" data-station="90s90s_boygroup">Boy Bands</button>
+<button class="stationbtn" data-station="xmasrocks">Christmas Rocks!</button>
+<button class="stationbtn" data-station="xmaslounge">Christmas Lounge</button>
+<button class="stationbtn" data-station="xmasfrisko">Xmas in Frisko</button>
+<button class="stationbtn" data-station="tinseltunes">Tinsel & Tunes</button>
+<button class="stationbtn" data-station="christmasstation">The Christmas Station</button>
+</div>
+
+
 
 <div class="install">
 <div style="margin-bottom:4px">Install Rican Radio like an app.</div>
@@ -233,7 +247,12 @@ const STATIONS={
     '90s90s_lovesongs':{label:'90s90s Lovesongs',source:'90s90s Lovesongs',stream:'https://streams.90s90s.de/love/mp3-192/streams.90s90s.de/',provider:'external'},
     '90s90s_nrw':{label:'90s90s NRW',source:'90s90s NRW',stream:'https://streams.90s90s.de/nrw/mp3-192/streams.90s90s.de/',provider:'external'},
     '90s90s_techno':{label:'90s90s Techno',source:'90s90s Techno',stream:'https://streams.90s90s.de/techno/mp3-192/streams.90s90s.de/',provider:'external'},
-    '90s90s_boygroup':{label:'90s90s Boygroup',source:'90s90s Boygroup',stream:'https://streams.90s90s.de/boygroup/mp3-192/streams.90s90s.de/',provider:'external'}
+    '90s90s_boygroup':{label:'90s90s Boygroup',source:'90s90s Boygroup',stream:'https://streams.90s90s.de/boygroup/mp3-192/streams.90s90s.de/',provider:'external'},
+    'xmasrocks':{label:'Christmas Rocks!',source:'SomaFM Christmas Rocks!',stream:'https://ice5.somafm.com/xmasrocks-128-mp3',provider:'external'},
+    'xmaslounge':{label:'Christmas Lounge',source:'SomaFM Christmas Lounge',stream:'https://ice5.somafm.com/christmas-128-mp3',provider:'external'},
+    'xmasfrisko':{label:'Xmas in Frisko',source:'SomaFM Xmas in Frisko',stream:'https://ice5.somafm.com/xmasinfrisko-128-mp3',provider:'external'},
+    'tinseltunes':{label:'Tinsel & Tunes',source:'Tinsel & Tunes',stream:'https://cp1.thepuremix.net:9954/stream.mp3',provider:'external'},
+    'christmasstation':{label:'The Christmas Station',source:'The Christmas Station',stream:'https://stream.thechristmasstation.org/main/64.aac',provider:'external'}
 };
 
 /*
@@ -254,9 +273,10 @@ const stationCategories={
     '2000s':'Rock','90s':'Rock','alternative':'Rock','punk':'Rock','hardrock':'Rock','classic':'Rock','rockparty':'Rock',
     'hits':'Pop/Mix','hiphop':'Hip-Hop/R&B','country':'Pop/Mix','fm00shiphop':'Hip-Hop/R&B',
     '90s90s_bawue':'Pop/Mix','90s90s_rnb':'Hip-Hop/R&B','90s90s_90s00s':'Pop/Mix','90s90s_hessen':'Pop/Mix',
-    '90s90s_house':'Dance','90s90s_lovesongs':'Pop/Mix','90s90s_nrw':'Pop/Mix','90s90s_techno':'Dance','90s90s_boygroup':'Pop/Mix'
+    '90s90s_house':'Dance','90s90s_lovesongs':'Pop/Mix','90s90s_nrw':'Pop/Mix','90s90s_techno':'Dance','90s90s_boygroup':'Pop/Mix',
+    'xmasrocks':'Holiday','xmaslounge':'Holiday','xmasfrisko':'Holiday','tinseltunes':'Holiday','christmasstation':'Holiday'
 };
-const categories=['All','Favorites','Rock','Hip-Hop/R&B','Dance','Pop/Mix'];
+const categories=['All','Favorites','Rock','Hip-Hop/R&B','Dance','Pop/Mix','Holiday'];
 const filters=document.getElementById('stationfilters');
 
 let activeCategory='All';
